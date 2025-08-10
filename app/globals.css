@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* BOMO 全局样式 */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  /* BOMO 品牌色彩变量 */
+  --primary: #2563eb;
+  --primary-light: #60a5fa;
+  --primary-dark: #1d4ed8;
+  --secondary: #f59e0b;
+  --secondary-light: #fbbf24;
+  --secondary-dark: #d97706;
+  --background: #fefefe;
+  --surface: #f8fafc;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+}
+
+body {
+  color: var(--text-primary);
+  background: var(--background);
+  font-feature-settings:
+    'rlig' 1,
+    'calt' 1;
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--surface);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--text-secondary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
