@@ -1,0 +1,155 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// 核心笔记表
+model Note {
+  id        String   @id @default(cuid())
+  title     String
+  content   String   // Markdown 内容
+  type      NoteType @default(GENERAL)
+  status    NoteStatus @default(DRAFT)
+  isFavorite Boolean  @default(false) @map("is_favorite") // 是否收藏
+  isPinned   Boolean  @default(false) @map("is_pinned")   // 是否置顶
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  // 关联关系
+  tags      TagRelation[]
+  mindMaps  MindMap[]
+  
+  @@map("notes")
+}
+
+// 标签表 - 支持层级结构
+model Tag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  color     String   @default("#2563eb") // HEX 颜色值
+  parentId  String?  @map("parent_id")
+  level     Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  // 自引用关系 - 支持标签层级
+  parent   Tag?  @relation("TagHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children Tag[] @relation("TagHierarchy")
+  
+  // 关联关系
+  notes TagRelation[]
+  
+  @@map("tags")
+}
+
+// 标签-笔记关联表
+model TagRelation {
+  id        String   @id @default(cuid())
+  noteId    String   @map("note_id")
+  tagId     String   @map("tag_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  // 关联关系
+  note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  
+  // 确保每个笔记-标签组合只能有一条记录
+  @@unique([noteId, tagId])
+  @@map("tag_relations")
+}
+
+// 思维导图表
+model MindMap {
+  id        String   @id @default(cuid())
+  title     String
+  data      String   // JSON 格式存储节点和连接数据
+  noteId    String?  @map("note_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  // 关联关系
+  note Note? @relation(fields: [noteId], references: [id], onDelete: SetNull)
+  
+  @@map("mind_maps")
+}
+
+// OKR 目标表
+model Objective {
+  id          String         @id @default(cuid())
+  title       String
+  description String?
+  type        ObjectiveType  @default(QUARTERLY)
+  deadline    DateTime?
+  progress    Float          @default(0) // 0-100
+  status      ObjectiveStatus @default(ACTIVE)
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+  
+  // 关联关系
+  keyResults KeyResult[]
+  
+  @@map("objectives")
+}
+
+// 关键结果表
+model KeyResult {
+  id           String    @id @default(cuid())
+  objectiveId  String    @map("objective_id")
+  description  String
+  targetValue  Float     @map("target_value")
+  currentValue Float     @default(0) @map("current_value")
+  unit         String    @default("")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  
+  // 关联关系
+  objective Objective @relation(fields: [objectiveId], references: [id], onDelete: Cascade)
+  
+  @@map("key_results")
+}
+
+// 枚举定义
+enum NoteType {
+  GENERAL     // 通用笔记
+  READING     // 读书笔记
+  DIARY       // 日记
+  INSIGHT     // 感悟
+  TODO        // 任务
+  OBJECTIVE   // 目标
+  
+  @@map("note_type")
+}
+
+enum NoteStatus {
+  DRAFT       // 草稿
+  PUBLISHED   // 已发布
+  ARCHIVED    // 已归档
+  
+  @@map("note_status")
+}
+
+enum ObjectiveType {
+  QUARTERLY   // 季度目标
+  YEARLY      // 年度目标
+  LIFETIME    // 人生目标
+  
+  @@map("objective_type")
+}
+
+enum ObjectiveStatus {
+  ACTIVE      // 进行中
+  COMPLETED   // 已完成
+  PAUSED      // 暂停
+  CANCELLED   // 已取消
+  
+  @@map("objective_status")
+}
